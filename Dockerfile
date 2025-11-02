@@ -114,11 +114,16 @@ RUN git config --global user.name "mr agent"
 # Install latest nvm (v0.39.7)
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 
+# install elan
+RUN curl https://elan.lean-lang.org/elan-init.sh -sSf | sh
+
 # ========================= PROJECT SETUP =========================
 # CUSTOMIZE THIS SECTION FOR YOUR PROJECT
 # This example shows Node.js/TypeScript setup. Adapt for your tech stack.
 # Examples: Python (pip/poetry), Java (Maven/Gradle), C++ (CMake), Rust (Cargo)
 # =================================================================
+
+
 
 # 0) Clone or copy your project repository
 # Replace with your repo URL and credentials if needed
@@ -129,14 +134,14 @@ RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | b
 #     GITHUB_TOKEN=$(echo "$GITHUB_TOKEN_BASE64" | base64 -d); \
 #     git clone https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/your-org/your-repo /home/ubuntu/[PROJECT_NAME]
 # Example for public repo:
-# RUN git clone https://github.com/your-org/your-repo /home/ubuntu/[PROJECT_NAME]
+RUN git clone https://github.com/hud-evals/example-lean-project /home/ubuntu/example-lean-project
 
-WORKDIR /home/ubuntu/[PROJECT_NAME]
+WORKDIR /home/ubuntu/example-lean-project
 
 # Checkout branches for testing (baseline, test, golden)
-ARG TEST_BRANCH=[test_branch_name]
-ARG GOLDEN_BRANCH=[golden_branch_name]
-ARG BASELINE_BRANCH=[baseline_branch_name]
+ARG TEST_BRANCH
+ARG GOLDEN_BRANCH
+ARG BASELINE_BRANCH
 RUN git checkout $BASELINE_BRANCH && \
     git checkout $TEST_BRANCH && \
     git checkout $GOLDEN_BRANCH && \

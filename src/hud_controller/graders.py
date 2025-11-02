@@ -6,25 +6,6 @@ from hud_controller.grading_runner import GradingRunner
 from hud_controller.spec import EnvironmentState, Grader
 
 
-class DefaultTestCasesPassingGrader(Grader):
-    """
-    A grader that checks if the all test cases are passing, within the codebase.
-    """
-
-    name = "DefaultTestCasesPassingGrader"
-
-    @classmethod
-    def compute_score(cls, state: EnvironmentState) -> float:
-        """
-        Compute a score based on whether the test cases are passing.
-        """
-        import subprocess
-
-        # run mvn test
-        if subprocess.run(["mvn", "test", "-Psmoke-test"]).returncode == 0:
-            return 1.0
-        return 0.0
-
 
 class AgentPatchGrader(Grader):
     """
@@ -40,9 +21,6 @@ class AgentPatchGrader(Grader):
         base: str,
         test: str,
         golden: str,
-        playwright_test_files: list[str] | None = None,
-        mocha_test_files: list[str] | None = None,
-        test_files: list[str] | None = None,
     ) -> tuple[float, dict]:
         """
         Compute a score based on whether the agent patch fixes the issue.
@@ -57,17 +35,10 @@ class AgentPatchGrader(Grader):
         Returns:
             tuple: (score, metadata) where score is 1.0 if agent patch fixes the issue, 0.0 otherwise
         """
-        # Create and run the grading runner
-        from .app import ONLY_SERVER
-
         runner = GradingRunner(
             base=base,
             test=test,
             golden=golden,
-            playwright_test_files=playwright_test_files,
-            mocha_test_files=mocha_test_files,
-            test_files=test_files,
-            only_server=ONLY_SERVER,
         )
 
         success, metadata = runner.run_grading()

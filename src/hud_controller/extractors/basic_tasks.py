@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 @problem(
-    id="example_easy_task",
+    id="greet_len",
     description="""
     Example Task 1: Fix a simple bug in [component name]
     
@@ -41,36 +41,19 @@ logger = logging.getLogger(__name__)
     difficulty="easy",
     task_type="coding",
     review_level="no-review",
-    base="example_easy_task_baseline",
-    test="example_easy_task_test",
-    golden="example_easy_task_golden",
+    base="greet_len_baseline",
+    test="greet_len_test",
+    golden="greet_len_golden",
 )
-def example_easy_task(state: EnvironmentState) -> Grade:
-    """
-    Task: [Brief one-line description]
-    
-    :param state (EnvironmentState): The current state of the environment
-                                    after the agent has worked on the task
-
-    Returns:
-        Grade: A grade object containing the score (0.0 to 1.0) based on whether
-               the [specific requirement] is met and tests pass.
-
-    Grading:
-        - Full score (1.0): If [specific success criteria] and all tests pass
-        - Zero score (0.0): If [specific failure criteria] or tests fail
-    """
+def greet_len(state: EnvironmentState) -> Grade:
     return Grade.from_subscores(
         [
             AgentPatchGrader.grade(
                 state=state,
                 weight=1.0,
-                base="example_easy_task_baseline",
-                test="example_easy_task_test",
-                golden="example_easy_task_golden",
-                test_files=[
-                    "path/to/test/file",
-                ],
+                base="greet_len_baseline",
+                test="greet_len_test",
+                golden="greet_len_golden",
             )
         ]
     )

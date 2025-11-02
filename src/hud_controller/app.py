@@ -16,7 +16,6 @@ from .tools.base import ToolResult
 from .tools.computer import Action
 
 logger = logging.getLogger(__name__)
-ONLY_SERVER = False
 
 # [CUSTOMIZE] Set your MCP server name
 mcp = FastMCP("agent_evaluation", port=8039, log_level="DEBUG", debug=True)
@@ -29,10 +28,8 @@ if TEST_MODE:
     # implementation
 
     from .tools.bash import BashTool
-    from .tools.computer import ComputerTool
     from .tools.edit import Command, EditTool
 
-    computer_tool = ComputerTool()
     edit_tool = EditTool()
     bash_tool = BashTool()
 
@@ -73,41 +70,6 @@ if TEST_MODE:
             new_str=new_str,
             insert_line=insert_line,
         )
-
-    @mcp.tool()
-    async def computer(
-        *,
-        action: Action,
-        text: str | None = None,
-        coordinate: tuple[int, int] | None = None,
-        start_coordinate: tuple[int, int] | None = None,
-        duration: int | float | None = None,
-        scroll_direction: str | None = None,
-        scroll_amount: int | None = None,
-    ) -> list[ImageContent | TextContent]:
-        """Perform computer interactions like typing, clicking, and scrolling.
-
-        Args:
-            action (Action): The type of action to perform (e.g., click, type, scroll)
-            text (str | None, optional): Text to type when action is type. Defaults to None.
-            coordinate (tuple[int, int] | None, optional): Screen coordinates for clicking. Defaults to None.
-            start_coordinate (tuple[int, int] | None, optional): Starting coordinates for drag actions. Defaults to None.
-            duration (int | float | None, optional): Duration for actions like hold. Defaults to None.
-            scroll_direction (str | None, optional): Direction to scroll ('up' or 'down'). Defaults to None.
-            scroll_amount (int | None, optional): Amount to scroll. Defaults to None.
-
-        Returns:
-            list[ImageContent | TextContent]: List of image or text content representing the action results
-        """
-        return await computer_tool(
-            action=action,
-            text=text,
-            coordinate=coordinate,
-            start_coordinate=start_coordinate,
-            duration=duration,
-            scroll_direction=scroll_direction,  # type: ignore[arg-type]
-            scroll_amount=scroll_amount,
-        )  # type: ignore[return-value]
 
     @mcp.tool(
         name="bash",
@@ -217,8 +179,6 @@ def grade_problem_script(
     output_path: str = None,
 ):
     """Grade a problem solution and return the grade results."""
-    global ONLY_SERVER
-    ONLY_SERVER = only_server
     transcript = "dummy transcript"
     grade = asyncio.run(grade_problem(problem_id, transcript))
     with open(output_path, "w") as f:
