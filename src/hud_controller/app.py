@@ -168,7 +168,13 @@ async def grade_problem(
     else:
         logger.error("Grading failed!")
 
-    return result
+    grade = Grade(
+        subscores={"Tests": 1.0 if success else 0.0},
+        weights={"Tests": 1.0},
+        metadata=result,
+    )
+
+    return grade
 
 
 @click.command()
