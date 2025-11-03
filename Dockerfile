@@ -108,6 +108,7 @@ RUN echo "PATH=/home/ubuntu/.elan/bin:$PATH" >> /home/ubuntu/.bash_profile
 #     GITHUB_TOKEN=$(echo "$GITHUB_TOKEN_BASE64" | base64 -d); \
 #     git clone https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/your-org/your-repo /home/ubuntu/[PROJECT_NAME]
 # Example for public repo:
+ENV random=random
 RUN git clone https://github.com/hud-evals/example-lean-codebase /home/ubuntu/example-lean-codebase
 
 WORKDIR /home/ubuntu/example-lean-codebase
