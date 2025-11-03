@@ -7,18 +7,18 @@ from mcp.server.fastmcp import FastMCP  # type: ignore
 from mcp.types import ImageContent, TextContent  # type: ignore
 from pydantic import Field
 
-import hud_controller.extractors
+import hud_controller.problems
 from hud_controller.grading_runner import GradingRunner
 from hud_controller.utils import import_submodules
 
 from .setup import start_dinit
-from .spec import PROBLEM_REGISTRY, EnvironmentState, Grade, ProblemSpec
+from .spec import PROBLEM_REGISTRY, Grade, ProblemSpec
 from .tools.base import ToolResult
 
 logger = logging.getLogger(__name__)
 
 # [CUSTOMIZE] Set your MCP server name
-mcp = FastMCP("agent_evaluation", port=8039, log_level="DEBUG", debug=True)
+mcp = FastMCP("agent_evaluation", log_level="DEBUG", debug=True)
 
 TEST_MODE = os.environ.get("MCP_TESTING_MODE", "1") in ["1", "true"]
 
@@ -82,8 +82,8 @@ if TEST_MODE:
         )
 
 # import all submodules
-# Import all task extractor modules to ensure problems are registered
-import_submodules(hud_controller.extractors)
+# Import all problem modules to ensure problems are registered
+import_submodules(hud_controller.problems)
 
 
 # [CUSTOMIZE] Update this template for your project

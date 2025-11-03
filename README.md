@@ -15,14 +15,11 @@ This is a template framework for creating and evaluating AI agent tasks. It prov
 ├── src/hud_controller/          # Main framework code
 │   ├── app.py                   # Main MCP server and entry points
 │   ├── spec.py                  # Core specifications (Problem, Grade, Grader)
-│   ├── graders.py               # Grading implementations
 │   ├── grading_runner.py        # Test execution and grading logic
 │   ├── utils.py                 # Utility functions
 │   ├── setup.py                 # Environment setup
-│   ├── extractors/              # Task definitions by difficulty
+│   ├── problems/              # Task definitions by difficulty
 │   │   ├── basic_tasks.py       # Easy difficulty tasks
-│   │   ├── medium_tasks.py      # Medium difficulty tasks
-│   │   └── hard_tasks.py        # Hard difficulty tasks
 │   └── tools/                   # MCP tools for testing
 │       ├── base.py              # Base tool definitions
 │       ├── bash.py              # Bash execution
@@ -38,149 +35,115 @@ This is a template framework for creating and evaluating AI agent tasks. It prov
 
 ### 1. Problem Definition
 
-Problems are defined using the `@problem` decorator with these key fields:
+Problems are defined using the `ProblemSpec` data class with these key fields:
 
 ```python
-@problem(
-    id="unique_task_id",
-    description="Detailed task description",
-    hints=[],  # Optional hints for agents
-    difficulty="easy",  # or "medium", "hard"
-    task_type="coding",
-    review_level="no-review",  # or other review levels
-    base="baseline_branch",
-    test="test_branch", 
-    golden="golden_solution_branch",
-)
-def task_name(state: EnvironmentState) -> Grade:
-    """Task implementation"""
-    # Return grade based on test results
+    ProblemSpec(
+        id="greet_len", # the unique ID of the problem
+        description="Please complete the function greet_length without using `sorry`.", # What you want the agent to do
+        difficulty="easy", # how difficult the problem is
+        # the branch names
+        base="greet_len_baseline", 
+        test="greet_len_test",
+        golden="greet_len_golden",
+    )
 ```
 
-### 2. Grading System
-
-The framework uses a sophisticated grading system:
-
-- **Grader**: Base class for all graders
-- **SubGrade**: Individual grading component with score and weight
-- **Grade**: Final grade computed from multiple SubGrades
-- **AgentPatchGrader**: Tests agent solutions by applying patches and running tests
-
-### 3. Test-Based Validation
+### 2. Test-Based Validation
 
 Tasks are graded by:
-1. Copying the repository to a clean workspace
-2. Applying a test patch (adds failing tests)
-3. Applying the agent's solution patch
-4. Running specified test files
-5. Parsing JUnit XML results to determine pass/fail
+1. Copying the repository (including whatever changes the agent made) to a clean workspace
+2. Applying the agent's solution patch
+3. Applying a test patch on top of what the agent did (adds tests that would fail in an unmodified repo)
+4. Check if the project compiles with `lake build`
+5. Running `lake test` to test the build 
 
 ## Creating New Tasks
 
-### Step 1: Choose Difficulty Level
-
-Place your task in the appropriate file:
-- `extractors/basic_tasks.py` - Easy tasks
-- `extractors/medium_tasks.py` - Medium tasks  
-- `extractors/hard_tasks.py` - Hard tasks
-
-### Step 2: Define the Task
-
-```python
-@problem(
-    id="my_task",
-    description="Clear description of what needs to be implemented",
-    hints=[
-        HintSpec(
-            hint_type="legit",  # or "leaky"
-            text="Helpful hint text",
-            why_legitmate="Explanation of why this hint is fair"
-        )
-    ],
-    difficulty="easy",
-    task_type="coding",
-    review_level="no-review",
-    base="my_task_baseline",
-    test="my_task_test",
-    golden="my_task_golden",
-)
-def my_task(state: EnvironmentState) -> Grade:
-    """
-    Task: Description
-    
-    :param state: The current state of the environment after the agent has worked
-    
-    Returns:
-        Grade: Score (0.0 to 1.0) based on test results
-    
-    Grading:
-        - Full score (1.0): All tests pass
-        - Zero score (0.0): Tests fail
-    """
-    return Grade.from_subscores([
-        AgentPatchGrader.grade(
-            state=state,
-            weight=1.0,
-            base="my_task_baseline",
-            test="my_task_test",
-            golden="my_task_golden",
-            jest_test_files=[
-                "path/to/test/file.test.ts",
-            ],
-        )
-    ])
-```
-
-### Step 3: Prepare Git Branches
+### Step 1: Prepare Git Branches
 
 You need three branches in your target repository:
 
 1. **baseline** - Starting state with the bug/missing feature
-2. **test** - Adds failing tests that verify the fix
-3. **golden** - Contains the correct solution (for reference)
+2. **test** - Adds tests that should fail on baseline, and pass in golden branch
+3. **golden** - Contains the correct solution (for reference). Notably, this should not contain the tests.
 
-### Step 4: Configure Test Files
+### Step 2: Define the Task
 
-Specify which test files should run:
-- `jest_test_files` - For Jest/TypeScript tests
-- `playwright_test_files` - For Playwright e2e tests (if supported)
-- `mocha_test_files` - For Mocha tests (if supported)
+We currently only have src/hud_controller/problems/basic.py, but feel free to make more files in the subdirectory.
+Once you do that, you can add a problem to the registry as follows:
+
+```python
+PROBLEM_REGISTRY.append(
+    ProblemSpec(
+        id="greet_len",
+        description="Please complete the function greet_length without using `sorry`.",
+        difficulty="easy",
+        base="greet_len_baseline",
+        test="greet_len_test",
+        golden="greet_len_golden",
+    )
+)
+```
+
+The base, test, and golden branches must correspond to the branches you created in the first step. 
+
+### Step 3: Validate your problem
+
+It's important to ensure that your problems pass a basic sanity check:
+* All tests at the baseline branch should pass
+* When we apply the hidden test set, the hidden tests should fail
+* When we apply the golden patch and then apply the hidden test set, all tests should pass
+
+To help you with this, we have a script called `utils/imagectl3.py`.
+
+To run and build the images you can do:
+```bash
+uv run utils/imagectl3.py --build --validate
+```
+You can specify the exact image you want to test with the `--ids` flag. 
+You can also make this easier to type by using the shorform `-b` flag for `--build` and the shortform `-v` flag for `--validate`.
+```bash
+uv run utils/imagectl3.py -bv --ids greet_len
+```
+Note: ensure your image is built before you try to validate it.
 
 ## Running Tasks
 
 ### Setup Environment
 
 ```bash
-# Install dependencies
-pip install -e .
-
-# Or with development dependencies
-pip install -e ".[dev]"
+uv sync
 ```
-
-### Run Grading
+### Build, Validate all problems and generate Json
 
 ```bash
-# Run a specific problem
-setup_problem <problem_id>
-grade_problem <problem_id>
-
-# Or use the main entry point
-hud_eval
+uv run utils/imagectl3.py lean_ -bvj
+```
+This will build all the docker images, with the prefix `lean_` and then run the validation workflow. 
+Once you get a lot of problems, you'll find it helpful to do building and validation in parallel with `--jobs`:
+```bash
+uv run utils/imagectl3.py lean_ -bvj --jobs 4
 ```
 
-## Grading Runner Details
+### Run hud eval locally
+You can run the images locally with:
+```
+uv run hud local-hud.json claude --max-steps 50
+```
 
-The `GradingRunner` class handles the entire grading workflow:
+### Run hud eval remotely
+You can run them remotely too! However, you'll need to push the images. T
+To make this easier, we have the `--push` or `-p` flag in imagectl3. 
+Note that we also change the image prefix to make it pushable to docker hub.
+```bash
+uv run utils/imagectl3.py govindhud/lean_ -bvjp --jobs 4
+```
+Once all images are pushed, we can:
+```
+uv run hud remote-hud.json claude --max-steps 50
+```
 
-1. **Workspace Preparation**: Copies repository to isolated workspace
-2. **Patch Application**: Applies test patch, then agent solution
-3. **Build Process**: Compiles the project (with cleanup of generated files)
-4. **Database Setup**: Resets test database and runs migrations (if applicable)
-5. **Server Management**: Optionally starts server (version-dependent)
-6. **Test Execution**: Runs specified test files
-7. **Result Collection**: Parses JUnit XML results
-8. **Cleanup**: Stops servers and cleans up resources
 
 ## Configuration
 
@@ -197,25 +160,9 @@ Key environment variables used by the grading system:
 
 The included `Dockerfile` sets up the complete environment:
 - Base system with required tools
-- Database (PostgreSQL)
-- Redis
-- Node.js/Yarn
+- Lean
 - VNC for GUI testing (if needed)
 
-## Testing Framework Integration
-
-The framework currently supports Jest tests with JUnit XML output:
-
-```javascript
-// jest.config.js should include:
-reporters: [
-  'default',
-  ['jest-junit', {
-    outputDirectory: '.',
-    outputName: 'jest_results.xml',
-  }]
-]
-```
 
 ## Best Practices
 
@@ -238,61 +185,3 @@ reporters: [
 1. **Clean Baseline**: Baseline should be stable and buildable
 2. **Minimal Test Patch**: Only add tests that verify the specific requirement
 3. **Correct Golden**: Golden solution should be minimal and idiomatic
-
-## Extending the Framework
-
-### Adding New Graders
-
-Create a new grader by extending the `Grader` base class:
-
-```python
-class CustomGrader(Grader):
-    name = "CustomGrader"
-    
-    @classmethod
-    def compute_score(cls, state: EnvironmentState, **kwargs) -> float:
-        # Your grading logic here
-        return score  # 0.0 to 1.0
-```
-
-### Adding New Test Frameworks
-
-Modify `GradingRunner` to support additional test frameworks:
-
-1. Add test file parameter to `__init__`
-2. Create test execution method (similar to `run_jest_tests`)
-3. Ensure JUnit XML output
-4. Update `run_grading` to call new test method
-
-## Troubleshooting
-
-### Build Failures
-
-- Check that baseline branch compiles successfully
-- Verify no generated files interfere (runner cleans up `.js` files from `.ts` sources)
-- Review build logs in stderr output
-
-### Test Failures
-
-- Verify test patch applies cleanly to baseline
-- Check that tests fail on baseline + test patch
-- Confirm tests pass on baseline + test + golden patches
-- Review JUnit XML output for specific failures
-
-### Server Issues
-
-- Check version detection logic if server won't start
-- Verify database migrations run successfully
-- Ensure server port (3000) is available
-
-## License
-
-This framework template is provided for guidance purposes. Customize as needed for your specific evaluation requirements.
-
-## Support
-
-For questions or issues:
-1. Review the example tasks in `extractors/` directories
-2. Check the grading logic in `grading_runner.py`
-3. Examine the problem decorator in `spec.py`
-
