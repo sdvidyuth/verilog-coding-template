@@ -21,14 +21,7 @@ logger = logging.getLogger(__name__)
 @problem(
     id="greet_len",
     description="""
-    Example Task 1: Fix a simple bug in [component name]
-    
-    [Detailed description of the bug]:
-    - Current behavior: [what happens now]
-    - Expected behavior: [what should happen]
-    
-    Example: "Fix the button click handler in components/Button.tsx that doesn't 
-    trigger the onClick callback. The issue is in the event handler binding."
+    Please complete the function greet_length without using `sorry`.
     """,
     hints=[
 #         HintSpec(

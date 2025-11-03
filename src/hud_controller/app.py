@@ -88,14 +88,9 @@ import_submodules(hud_controller.extractors)
 
 # [CUSTOMIZE] Update this template for your project
 template = """
-You will be working on a task for [PROJECT_NAME].
-The repository has already been cloned in the environment in /home/ubuntu/[PROJECT_NAME].
-
-[Add any project-specific instructions here, for example:
-- How to run tests
-- Build system guidelines
-- File naming conventions
-- Code style requirements]
+You will be working on a task for example-lean-codebase.
+The repository has already been cloned in the environment in /home/ubuntu/example-lean-codebase.
+Lean has been installed, please source ~/.bash_profile to use it.
 
 Use the tools provided to complete the following task:
 

@@ -59,7 +59,7 @@ class GradingRunner:
   </testsuite>
 </testsuites>"""
 
-    def run_tests(self) -> str:
+    def run_tests(self) -> tuple[bool, str]:
         logger.info(f"Running tests in {self.grade_working_dir}")
         
         result = subprocess.run(
@@ -81,9 +81,9 @@ class GradingRunner:
 
         # make a single junit xml file with the test results
         if result.returncode != 0:
-            return self._format_junit_xml("Tests", "Tests failed", result.stdout, result.stderr)
+            return False, {"junit": self._format_junit_xml("Tests", "Tests failed", result.stdout, result.stderr)}
         else:
-            return self._format_junit_xml("Tests", None, result.stdout, result.stderr)
+            return True, {"junit": self._format_junit_xml("Tests", None, result.stdout, result.stderr)}
 
 
     def _get_build_command(self) -> list[str]:
@@ -159,21 +159,8 @@ class GradingRunner:
         
         logger.info(f"Compiled project successfully in {self.grade_working_dir}")
 
-      
         # Step 4: Run tests
-        junit_xmls = [self.run_tests()]
-        
-        # Cleanup: Stop server if it was started
-        if self.server_process:
-            logger.info("Stopping server")
-            self.server_process.terminate()
-            try:
-                self.server_process.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                self.server_process.kill()
-
-        merged_junit, full_success = merge_junits(junit_xmls)
-        return full_success, {"junit": merged_junit}
+        return self.run_tests()
 
     def validate_patches(self) -> tuple[bool, dict]:
         """

@@ -266,13 +266,9 @@ def hud_dict(spec: ProcessedSpec, local: bool) -> dict:
                 "command": "docker",
                 "args": [
                     "run",
-                    "-e",
-                    "BROWSER_PROVIDER=anchorbrowser",
-                    "-e",
-                    "ANCHOR_API_KEY=${ANCHOR_API_KEY}",
                     "--rm",
                     "-i",
-                    "doordash:latest",
+                    spec.image,
                 ],
             }
         }
@@ -282,11 +278,7 @@ def hud_dict(spec: ProcessedSpec, local: bool) -> dict:
                 "url": "https://mcp.hud.so/v3/mcp",
                 "headers": {
                     "Authorization": "Bearer ${HUD_API_KEY}",
-                    "Mcp-Image": "hudevals/menu-scraper",
-                    "Env-Openai-Api-Key": "${OPENAI_API_KEY}",
-                    "Env-Anthropic-Api-Key": "${ANTHROPIC_API_KEY}",
-                    "Env-Anchor-Api-Key": "${ANCHOR_API_KEY}",
-                    "Env-Browser-Provider": "${BROWSER_PROVIDER}",
+                    "Mcp-Image": spec.image,
                 },
             }
         }
