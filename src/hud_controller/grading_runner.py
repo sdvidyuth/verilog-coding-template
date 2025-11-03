@@ -9,18 +9,13 @@ This script:
 4. Generates JUnit XML report at /tmp/grading_results.xml
 """
 
-import json
 import logging
 import os
-import socket
 import subprocess
 import sys
 import threading
-import time
 import uuid
 from pathlib import Path
-
-from defusedxml import ElementTree as DefusedET
 
 from .utils import merge_junits
 
@@ -67,11 +62,8 @@ class GradingRunner:
     def run_tests(self) -> str:
         logger.info(f"Running tests in {self.grade_working_dir}")
         
-        # [CUSTOMIZE] Set your test command here
-        test_command = "lake test"
-        
         result = subprocess.run(
-            ["sudo", "-u", "ubuntu", "bash", "-lc", test_command],
+            ["sudo", "-u", "ubuntu", "bash", "-lc", " ".join(self._get_test_command())],
             cwd=Path(self.grade_working_dir),
             capture_output=True,
             text=True,
@@ -94,6 +86,11 @@ class GradingRunner:
             return self._format_junit_xml("Tests", None, result.stdout, result.stderr)
 
 
+    def _get_build_command(self) -> list[str]:
+        return ["lake", "build"]
+
+    def _get_test_command(self) -> list[str]:
+        return ["lake", "test"]
 
 
     def run_grading(self) -> tuple[bool, dict]:
@@ -113,11 +110,9 @@ class GradingRunner:
         # Step 3: compile the project (should work if the agent code compiles)
         logger.info(f"Compiling project in {self.grade_working_dir}")
         
-        build_command = "lake build"
-        
         # Run build and stream output to stderr in real-time
         build_process = subprocess.Popen(
-            ["sudo", "-u", "ubuntu", "bash", "-lc", build_command],
+            ["sudo", "-u", "ubuntu", "bash", "-lc", " ".join(self._get_build_command())],
             cwd=self.grade_working_dir,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -196,11 +191,11 @@ class GradingRunner:
         logger.info(f"Copied original repo to {self.grade_working_dir}")
 
         # Step 2: Check that baseline compiles (without resetting)
-        logger.info(f"Checking baseline compilation")
+        logger.info("Checking baseline compilation")
         try:
             logger.info(f"Compiling project at baseline in {self.grade_working_dir}")
             subprocess.run(
-                ["sudo", "-E", "-u", "ubuntu"] + self._get_build_command(),
+                ["sudo", "-u", "ubuntu", "bash", "-lc", " ".join(self._get_build_command())],
                 cwd=self.grade_working_dir,
                 timeout=1500,
                 check=True,
@@ -208,90 +203,70 @@ class GradingRunner:
                 text=True,
                 env=dict(os.environ, HOME="/home/ubuntu"),
             )
-            logger.info(f"Baseline compilation successful")
+            logger.info("Baseline compilation successful")
         except subprocess.CalledProcessError as e:
             # Format compile error as JUnit XML
             xml_content = self._format_junit_xml("BaselineCompiles", "Baseline compilation failed", e.stdout, e.stderr)
-            logger.info(f"Baseline compilation failed, returning XML: {xml_content}")
+            logger.info("Baseline compilation failed, returning XML: {xml_content}")
             return False, {"junit": xml_content}
 
         # Step 3: Apply test patch
         logger.info(f"Applying test patch from {self.test_patch_path}")
-        with open(self.test_patch_path, "r") as f:
+        with open(self.test_patch_path) as f:
             patch = f.read().encode("utf-8")
         subprocess.run(
             ["sudo", "-u", "ubuntu", "git", "apply", "-"], input=patch, check=True, cwd=self.grade_working_dir
         )
-        logger.info(f"Applied test patch successfully")
+        logger.info("Applied test patch successfully")
 
         # Step 4: Ensure that the tests fail
-        logger.info(f"Running tests with test patch (expecting failure)")
+        logger.info("Running tests with test patch (expecting failure)")
         result = subprocess.run(
-            ["sudo", "-E", "-u", "ubuntu"] + self._get_test_command(),
+            ["sudo", "-u", "ubuntu", "bash", "-lc", " ".join(self._get_test_command())],
             cwd=self.grade_working_dir,
             capture_output=True,
             text=True,
             env=dict(os.environ, HOME="/home/ubuntu"),
         )
 
-        # Check both return code and actual test XML for failures
-        test_xml = self._find_and_read_test_xml(self.grade_working_dir)
-        has_failures = False
-        
-        if test_xml:
-            try:
-                failures, errors = self._parse_junit_xml(test_xml)
-                has_failures = (failures > 0) or (errors > 0)
-                logger.info(f"Test patch results: returncode={result.returncode}, failures={failures}, errors={errors}")
-            except DefusedET.ParseError as e:
-                logger.warning(f"Failed to parse test XML: {e}")
-                # Fall back to return code check only
-                has_failures = (result.returncode != 0)
-        else:
-            # No XML found, fall back to return code check
-            has_failures = (result.returncode != 0)
-        
-        if not has_failures:
+        if result.returncode == 0:
             # Tests passed when they should have failed (no failures in return code or XML)
             xml_content = self._format_junit_xml("TestPatchFailsTests", "Test patch did not cause tests to fail", result.stdout, result.stderr)
             logger.info(f"Tests passed with test patch (expected failure), returning XML: {xml_content}")
             return False, {"junit": xml_content}
 
-        logger.info(f"Tests failed as expected with test patch")
+        logger.info("Tests failed as expected with test patch")
 
         # Step 5: Reset the repo to the baseline
         logger.info(f"Resetting repo to baseline in {self.grade_working_dir}")
         subprocess.run(
             ["sudo", "-u", "ubuntu", "git", "reset", "--hard"], cwd=self.grade_working_dir, check=True
         )
-        subprocess.run(
-            ["sudo", "-u", "ubuntu", "git", "clean", "-fdx"], cwd=self.grade_working_dir, check=True
-        )
-        logger.info(f"Reset repo to baseline successfully")
+        logger.info("Reset repo to baseline successfully")
 
         # Step 6: Apply golden patch
-        logger.info(f"Applying golden patch from {self.golden_patch_path}")
-        with open(self.golden_patch_path, "r") as f:
+        logger.info("Applying golden patch from {self.golden_patch_path}")
+        with open(self.golden_patch_path) as f:
             patch = f.read().encode("utf-8")
         subprocess.run(
             ["sudo", "-u", "ubuntu", "git", "apply", "-"], input=patch, check=True, cwd=self.grade_working_dir
         )
-        logger.info(f"Applied golden patch successfully")
+        logger.info("Applied golden patch successfully")
 
         # Step 7: Apply test patch again
         logger.info(f"Applying test patch again in {self.grade_working_dir}")
-        with open(self.test_patch_path, "r") as f:
+        with open(self.test_patch_path) as f:
             patch = f.read().encode("utf-8")
         subprocess.run(
             ["sudo", "-u", "ubuntu", "git", "apply", "-"], input=patch, check=True, cwd=self.grade_working_dir
         )
-        logger.info(f"Applied test patch again successfully")
+        logger.info("Applied test patch again successfully")
 
         # Step 8: Compile with golden patch
         try:
             logger.info(f"Compiling project with golden patch in {self.grade_working_dir}")
             subprocess.run(
-                ["sudo", "-E", "-u", "ubuntu"] + self._get_build_command(),
+                ["sudo", "-u", "ubuntu", "bash", "-lc", " ".join(self._get_build_command())],
                 cwd=self.grade_working_dir,
                 timeout=1500,
                 check=True,
@@ -299,7 +274,7 @@ class GradingRunner:
                 text=True,
                 env=dict(os.environ, HOME="/home/ubuntu"),
             )
-            logger.info(f"Compilation with golden patch successful")
+            logger.info("Compilation with golden patch successful")
         except subprocess.CalledProcessError as e:
             # Format compile error as JUnit XML
             xml_content = self._format_junit_xml("GoldenPatchCompiles", "Golden patch compilation failed", e.stdout, e.stderr)
@@ -307,48 +282,30 @@ class GradingRunner:
             return False, {"junit": xml_content}
 
         # Step 9: Ensure that the tests pass with golden patch
-        logger.info(f"Running tests with golden patch (expecting success)")
+        logger.info("Running tests with golden patch (expecting success)")
         result = subprocess.run(
-            ["sudo", "-E", "-u", "ubuntu"] + self._get_test_command(),
+            ["sudo", "-u", "ubuntu", "bash", "-lc", " ".join(self._get_test_command())],
             cwd=self.grade_working_dir,
             capture_output=True,
             text=True,
             env=dict(os.environ, HOME="/home/ubuntu"),
         )
 
-        # Check both return code and actual test XML for success
-        test_xml = self._find_and_read_test_xml(self.grade_working_dir)
-        has_failures = False
-        
-        if test_xml:
-            try:
-                failures, errors = self._parse_junit_xml(test_xml)
-                has_failures = (failures > 0) or (errors > 0)
-                logger.info(f"Golden patch results: returncode={result.returncode}, failures={failures}, errors={errors}")
-            except DefusedET.ParseError as e:
-                logger.warning(f"Failed to parse test XML: {e}")
-                # Fall back to return code check only
-                has_failures = (result.returncode != 0)
-        else:
-            # No XML found, fall back to return code check
-            has_failures = (result.returncode != 0)
-        
-        # Check if either return code or XML shows failures
-        if result.returncode != 0 or has_failures:
+        if result.returncode != 0:
             # Tests failed when they should have passed
             xml_content = self._format_junit_xml(
                 "GoldenPatchPassesTests", 
-                f"Golden patch did not fix tests (returncode={result.returncode}, failures in XML={has_failures})", 
+                f"Golden patch did not fix tests (returncode={result.returncode})", 
                 result.stdout, 
                 result.stderr
             )
             logger.info(f"Tests failed with golden patch (expected success), returning XML: {xml_content}")
             return False, {"junit": xml_content}
 
-        logger.info(f"Tests passed as expected with golden patch")
+        logger.info("Tests passed as expected with golden patch")
 
         # All validation steps passed
-        xml_content = f"""<?xml version="1.0" encoding="UTF-8"?>
+        xml_content = """<?xml version="1.0" encoding="UTF-8"?>
 <testsuites>
   <testsuite name="PatchValidation" tests="6" failures="0" errors="0" skipped="0">
     <testcase classname="PatchValidation" name="testBaselineCompiles" time="0.0"/>
@@ -360,5 +317,5 @@ class GradingRunner:
   </testsuite>
 </testsuites>"""
 
-        logger.info(f"All validation steps passed")
+        logger.info("All validation steps passed")
         return True, {"junit": xml_content}
