@@ -20,7 +20,7 @@ dependencies = [
     "pytest>=8.4.0",
     "packaging>=21.0",
     "defusedxml>=0.7.1",
-    "hud-python[agents]>=0.4.53",
+    "hud-python[agents]>=0.4.62",
 ]
 
 [project.optional-dependencies]

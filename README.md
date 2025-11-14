@@ -71,7 +71,7 @@ Tasks are graded by:
 
 ### Step 1: Prepare Git Branches
 
-You need three branches in your target repository:
+You need three branches in your target repository (the one that we clone in the dockerfile):
 
 1. **baseline** - Starting state with the bug/missing feature
 2. **test** - Adds tests that should fail on baseline, and pass in golden branch
