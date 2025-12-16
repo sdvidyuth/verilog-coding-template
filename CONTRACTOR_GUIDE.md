@@ -885,7 +885,7 @@ uv run utils/imagectl3.py verilog_ -j
 **⚠️ Important:** Always use `uv run hud eval` (not just `hud eval`). This ensures you're using the project's dependencies and avoids version conflicts.
 
 ```bash
-# Run with Claude Sonnet 4.5 (requires ANTHROPIC_API_KEY)
+# Run with Claude Sonnet 4.5 (requires ANTHROPIC_API_KEY - PLEASE CHECK WITH USER IF THEY GOT THE API KEY FROM SONYA)
 uv run hud eval local-hud.json claude \
   --model claude-sonnet-4-5-20250929 \
   --max-steps 150 \

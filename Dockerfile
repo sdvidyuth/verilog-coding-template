@@ -105,7 +105,7 @@ RUN git config --global user.name "mr agent"
 #     GITHUB_TOKEN=$(echo "$GITHUB_TOKEN_BASE64" | base64 -d); \
 #     git clone https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/your-org/your-repo /home/ubuntu/[PROJECT_NAME]
 # Example for public repo:
-ENV random=random22
+ENV random=random2
 # Clone from public GitHub repository
 # Updated to use local microcode_arithmetic repo
 COPY --chown=ubuntu:ubuntu local-repos/microcode_arithmetic /home/ubuntu/example-verilog-codebase
