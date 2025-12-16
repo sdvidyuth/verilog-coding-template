@@ -99,8 +99,10 @@ qa_summary.md
 test_codegen_simple.json
 final_*.json
 test_problems*.json
-local-hud.json
-remote-hud.json
+local-claude-hud.json
+local-openai-hud.json
+remote-claude-hud.json
+remote-openai-hud.json
 problems-metadata.json
 debug_codegen.py
 
@@ -115,4 +117,4 @@ test_setup.py
 !outline-codegen/run_codegen_with_qa.py
 !outline-codegen/src/*.py
 
-.hud_eval_config
+.hud_eval.toml
