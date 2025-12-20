@@ -96,11 +96,17 @@ RUN git config --global user.name "mr agent"
 
 
 
-# 0) Clone the problems repository (private)
+# 0) Clone the problems repository
+# For private repos, pass GITHUB_TOKEN as build arg
 ARG GITHUB_TOKEN
-ENV random=random5
+ARG REPO_URL=https://github.com/hud-evals/example-verilog-codebase.git
+ENV random=random6
 RUN cd /home/ubuntu && \
-    git clone https://${GITHUB_TOKEN}@github.com/phinitylabs/microcode_sequencer.git example-verilog-codebase && \
+    if [ -n "$GITHUB_TOKEN" ]; then \
+        git clone https://${GITHUB_TOKEN}@${REPO_URL#https://} example-verilog-codebase; \
+    else \
+        git clone ${REPO_URL} example-verilog-codebase; \
+    fi && \
     chown -R ubuntu:ubuntu example-verilog-codebase
 
 WORKDIR /home/ubuntu/example-verilog-codebase
