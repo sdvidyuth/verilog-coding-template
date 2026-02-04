@@ -33,25 +33,3 @@ Output:
         test_files=["tests/test_simple_counter_hidden.py"],
     )
 )
-
-PROBLEM_REGISTRY.append(
-    ProblemSpec(
-        id="simple_dff",
-        description="""Please implement a simple D flip-flop with clock and data inputs.
-
-The output should capture the data input on the rising edge of the clock.
-
-Inputs:
-- clk: Clock signal (rising edge triggered)
-- d: Data input
-
-Output:
-- q: Output value
-""",
-        difficulty="easy",
-        base="simple_dff_baseline",
-        test="simple_dff_test",
-        golden="simple_dff_golden",
-        test_files=["tests/test_simple_dff_hidden.py"],
-    )
-)
