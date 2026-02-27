@@ -12,24 +12,19 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 
 PROBLEM_REGISTRY.append(
-    ProblemSpec(
-        id="simple_counter",
-        description="""Please implement a simple synchronous counter with reset, enable, and load functionality.
-
-Inputs:
-- clk: Clock signal (rising edge triggered)
-- rst: Synchronous reset signal
-- ena: Enable signal (allows counting)
-- set: Load signal (sets counter to a specific value)
-- din: 8-bit data input (value to load when set is high)
-
-Output:
-- counter: 8-bit counter value
-""",
-        difficulty="easy",
-        base="simple_counter_baseline",
-        test="simple_counter_test",
-        golden="simple_counter_golden",
-        test_files=["tests/test_simple_counter_hidden.py"],
-    )
+   ProblemSpec(
+       id="async_fifo",
+       description="""Complete the implementation of Asynch FIFO.
+       The FIFO connects two independent clock domains (wr_clk and rd_clk).
+       Parameterizable width and depth (power of two).
+       All logic must be synthesizable.
+       Implement a clean, correct, and CDC-safe async FIFO.""",
+       difficulty="medium",
+       base="async_fifo_baseline",
+       test="async_fifo_test",
+       golden="async_fifo_golden",
+       test_files=["tests/test_fifo.py"],
+   )
 )
+
+
