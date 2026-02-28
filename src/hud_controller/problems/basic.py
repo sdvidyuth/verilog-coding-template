@@ -30,9 +30,9 @@ Outputs:
  );
 """,
         difficulty="medium",
-        base="async_baseline",
-        test="async_test",
-        golden="async_golden",
+        base="async_fifo_baseline",
+        test="async_fifo_test",
+        golden="async_fifo_golden",
         test_files=["tests/test_fifo.py"],
     )
 )
